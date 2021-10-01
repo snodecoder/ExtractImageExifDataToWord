@@ -61,7 +61,7 @@ try{
 
     # Adjust the metadata property names to System Locale
     if ($SystemLocale -like "en-US") { $Width = "Width"     ; $Height = "Height" ; $Name = "Name" ; $Path = "Path" }
-    if ($SystemLocale -like "nl-NL") { $Width = "Breedte"   ; $Height = "Hoogte" ; $Name = "Naam" ; $Path = "Pad"  }
+    elseif ($SystemLocale -like "nl-NL") { $Width = "Breedte"   ; $Height = "Hoogte" ; $Name = "Naam" ; $Path = "Pad"  }
 
 #endregion
 }
@@ -100,9 +100,9 @@ try{
 
         foreach ($prop in $props)
         {
-            if ($image.($prop.$Name).Length -gt 0)
+            if ($image.($prop.Name).Length -gt 0)
             {
-                $array += [pscustomobject]@{ Name = $prop.$Name; Value = $image.($prop.$Name) }
+                $array += [pscustomobject]@{ Name = $prop.Name; Value = $image.($prop.Name) }
             }
         }
 

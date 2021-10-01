@@ -14,6 +14,7 @@
 .NOTES
     
 #>
+
 Function Get-FileMetaData
 {
     [CmdletBinding()]
@@ -35,15 +36,14 @@ Function Get-FileMetaData
             if ($File.Name -like "*.png" -or $File.Name -like "*.jpg" -or $File.Name -like "*.jpeg" -or $File.Name -like "*.gif" -or $File.Name -like "*.tif" -or $File.Name -like "*.tiff" -or $File.Name -like "*.bmp") 
             {
                 $MetaDataObject = New-Object System.Object
-                
-                for ($a ; $a -le 266; $a++)
+                for ($a ; $a -le 10000; $a++)
                 {
                     if ($objFolder.getDetailsOf($File, $a))
                     {
                         $property = $objFolder.getDetailsOf($objFolder.items, $a)
                         $value = $objFolder.getDetailsOf($File, $a)
-
-                        If (($Value -ne $null) -and ($Value -ne '')) 
+                                                
+                        If (($Value -ne $null) -and ($Value -ne '') -and ($Property -ne $null) -and ($Property -ne '') ) 
                         {
                             $MetaDataObject | Add-Member -MemberType NoteProperty -Name $Property -Value $Value
                         }
