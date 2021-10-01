@@ -6,7 +6,7 @@
 .EXAMPLE
     PS C:\> .\Extract-ImageExifDataToWord.ps1 -PhotosFolderPath ".\example"
     Extracts EXIF data from all images in ".\example", and saves the images and corresponding EXIF metadata to a Word Document named "EXIF_Photo_Data.docx" in the same folder.
-    
+
     [OPTIONAL]
     PS C:\> .\Extract-ImageExifDataToWord.ps1 -PhotosFolderPath ".\example" -WordDocumentName "EXIF-ImageData-Project"
     Extracts EXIF data from all images in ".\example", and saves the images and corresponding EXIF metadata to a Word Document named "EXIF-ImageData-Project.docx" in the same folder.
@@ -15,7 +15,7 @@
     -PhotosFolderPath -> Folder path location for the image files you'd like to extract EXIF metadata from.
     -WordDocumentName -> [OPTIONAL] Name for the Word document where the EXIF metadata and images will be saved in. Default name is: "EXIF_Photo_Data"
 .OUTPUTS
-    Word Document with all the images from $PhotosFolderPath, combined with the corresponding EXIF metadata information located in a table beneath each image. 
+    Word Document with all the images from $PhotosFolderPath, combined with the corresponding EXIF metadata information located in a table beneath each image.
 .NOTES
     Thanks to https://community.spiceworks.com/people/mohand    -> https://community.spiceworks.com/topic/1250688-powershell-script-to-read-metadata-info-from-pictures
     Thanks to https://github.com/EvotecIT                       -> https://github.com/EvotecIT/PSWriteWord
@@ -35,8 +35,8 @@ try{
 #region Preparation
 
     # Variables
-    # These variables control the Word Document general formatting. For more extensive format control, please review the documentation for PSWriteWord (https://github.com/EvotecIT/PSWriteWord) 
-    [int]$WordImageWidth = 500 # Value is in Pixels. Heigth of the image will be automatically calculated based upon Width and original proportions.
+    # These variables control the Word Document general formatting. For more extensive format control, please review the documentation for PSWriteWord (https://github.com/EvotecIT/PSWriteWord)
+    [int]$WordImageWidth = 500 # Value is in Pixels. Height of the image will be automatically calculated based upon Width and original proportions.
     [double]$WordImageTitleFontSize = 12
     [double]$WordImageTableFontSize = 8
 
@@ -54,12 +54,20 @@ try{
     if ( $WordDocumentName.EndsWith(".doc") )   { $WordDocumentName = $WordDocumentName.Replace(".doc", "") }   # Remove .doc from parameter
 
     # Ask user for new folder location if it does not exist
-    while ( !(Test-Path $PhotosFolderPath) ) { $PhotosFolderPath = Read-Host -Prompt "The photos folder path does not exist, please enter a valid folder path where the photos are located. Example: 'C:\Fotos\'" }
+    while ( !(Test-Path $PhotosFolderPath) ) { $PhotosFolderPath = Read-Host -Prompt "The photos folder path does not exist, please enter a valid folder path where the photos are located. Example: 'C:\Photos\'" }
+
+    # Get System locale
+    $SystemLocale = $PSUICulture
+
+    # Adjust the metadata property names to System Locale
+    if ($SystemLocale -like "en-US") { $Width = "Width"     ; $Height = "Height" ; $Name = "Name" ; $Path = "Path" }
+    if ($SystemLocale -like "nl-NL") { $Width = "Breedte"   ; $Height = "Hoogte" ; $Name = "Naam" ; $Path = "Pad"  }
 
 #endregion
 }
 catch{
     Write-Host "There was an error during preparation."
+    Write-Host $Error[0]
     Read-Host -Prompt "Press any key to exit.."
     throw
 }
@@ -72,39 +80,38 @@ try{
     $WordDocument = New-WordDocument "$($PhotosFolderPath)$($WordDocumentName).docx"
 
     # Get Photo EXIF data
-    $ExifData = Get-FileMetaData -Folder $PhotosFolderPath
+    $ExifDataImages = Get-FileMetaData -Folder $PhotosFolderPath
     $image = $null
 
-    foreach ($image in $ExifData)
+    foreach ($image in $ExifDataImages)
     {
         # Calculate photo proportions
-        $WordImageProportion = ($image.Breedte).remove(0,1).Replace(" pixels","") / ($image.Hoogte).Remove(0,1).Replace(" pixels","")
-        $WordImageWidth = 500
-        $WordImageHeigth = $WordImageWidth / $WordImageProportion
+        $WordImageProportion = ($image.$Width).remove(0,1).Replace(" pixels","") / ($image.$Height).Remove(0,1).Replace(" pixels","")
+        $WordImageHeight = $WordImageWidth / $WordImageProportion
 
         # Add content to Word Document
-        Add-WordText -WordDocument $WordDocument -Text $image.Naam -FontSize $WordImageTitleFontSize -Supress $true
-        Add-WordPicture -WordDocument $WordDocument -ImagePath $image.pad -ImageWidth $WordImageWidth -ImageHeight $WordImageHeigth -Alignment left -Supress $true
+        Add-WordText -WordDocument $WordDocument -Text $image.$Name -FontSize $WordImageTitleFontSize -Supress $true
+        Add-WordPicture -WordDocument $WordDocument -ImagePath $image.$Path -ImageWidth $WordImageWidth -ImageHeight $WordImageHeight -Alignment left -Supress $true
         Add-WordParagraph -WordDocument $WordDocument -Supress $true
 
         # Reorganize EXIF data
         $array = @()
-        $props = $image | Get-Member -MemberType NoteProperty 
+        $props = $image | Get-Member -MemberType NoteProperty
 
         foreach ($prop in $props)
         {
-            if ($image.($prop.name).Length -gt 0)
-            { 
-                $array += [pscustomobject]@{ Name = $prop.name; Value = $image.($prop.name) } 
+            if ($image.($prop.$Name).Length -gt 0)
+            {
+                $array += [pscustomobject]@{ Name = $prop.$Name; Value = $image.($prop.$Name) }
             }
         }
 
         # Add EXIF data to Word
-        $table = Add-WordTable -WordDocument $WordDocument -DataTable $array  -FontSize $WordImageTableFontSize -Design LightShading -ContinueFormatting -AutoFit Contents -BreakPageAfterTable -Supress $true
+        $table = Add-WordTable -WordDocument $WordDocument -DataTable $array -FontSize $WordImageTableFontSize -Design LightShading -ContinueFormatting -AutoFit Contents -BreakPageAfterTable -Supress $true
     }
 
     # Save all changes to Word document
-    Save-WordDocument -WordDocument $WordDocument -Language 'nl-nl' -KillWord -OpenDocument
+    Save-WordDocument -WordDocument $WordDocument -Language $SystemLocale -KillWord -OpenDocument
 
     Write-Host "All done! Word Document saved at: $($PhotosFolderPath)$($WordDocumentName).docx"
 
