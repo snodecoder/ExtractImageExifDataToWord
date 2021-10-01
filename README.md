@@ -24,8 +24,7 @@ Extracts EXIF data from all images in ".\example", and saves the images and corr
 Word Document with all the images from $PhotosFolderPath, combined with the corresponding EXIF metadata information located in a table beneath each image. 
 
 ### THANKS & REFERENCES
-Thanks to https://community.spiceworks.com/people/mohand
-Thanks to https://github.com/EvotecIT
+Thanks to https://community.spiceworks.com/people/mohand and https://github.com/EvotecIT
 
 References:
 https://community.spiceworks.com/topic/1250688-powershell-script-to-read-metadata-info-from-pictures
